@@ -27,10 +27,10 @@ A local web application for building and organizing your own productivity tools.
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd productivity-tools
+cd toolshed
 
 # Install dependencies
-npm install
+npm ci
 
 # Start the development server
 npm run dev
@@ -41,7 +41,7 @@ Open your browser to `http://localhost:5173` (or the port shown in your terminal
 ## 📁 Project Structure
 
 ```
-productivity-tools/
+toolshed/
 ├── src/
 │   ├── tools/                    # All productivity tools go here
 │   │   ├── index.ts              # Auto-discovery logic
