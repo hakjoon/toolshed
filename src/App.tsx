@@ -24,7 +24,7 @@ function App() {
         } bg-gray-900 text-white transition-all duration-300 overflow-hidden`}
       >
         <div className="p-4">
-          <h1 className="text-2xl font-bold mb-6">Productivity Tools</h1>
+          <h1 className="text-2xl font-bold mb-6">Toolshed</h1>
           <nav className="space-y-2">
             {tools.map((tool) => (
               <button
