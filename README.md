@@ -1,6 +1,8 @@
-# 🛠️ Productivity Tools Suite
+# 🛠️ Toolshed Tools Suite
 
 A local web application for building and organizing your own productivity tools. Features auto-discovery of tools, hot reload during development, and a clean, modern interface.
+
+Mostly a sandbox to play around with vibe coding small tools.
 
 ## ✨ Features
 
