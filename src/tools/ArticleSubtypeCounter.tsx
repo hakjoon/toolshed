@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   BarChart3,
-  PieChart,
   Copy,
   Upload,
   Calendar,
@@ -126,9 +125,14 @@ export default function ArticleSubtypeCounter() {
         return;
       }
 
+      interface Article {
+        articleSubType?: string;
+        _type?: string;
+      }
+
       // Count by subtype
       const countMap = parsed.reduce(
-        (acc: Record<string, number>, article: any) => {
+        (acc: Record<string, number>, article: Article) => {
           const subtype = article.articleSubType || "unspecified";
           const typePrefix =
             articleType === "both"
@@ -193,7 +197,7 @@ export default function ArticleSubtypeCounter() {
               </label>
               <select
                 value={articleType}
-                onChange={(e) => setArticleType(e.target.value as any)}
+                onChange={(e) => setArticleType(e.target.value as "freeArticle" | "premiumArticle" | "both")}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="freeArticle">Free Articles</option>

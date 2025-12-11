@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import { ChevronDown, Info, Copy, Check, Upload } from 'lucide-react';
 
 // Add CSS for fade-in animation
@@ -55,7 +55,7 @@ interface Workflow {
 
 interface WorkflowDataItem {
   model: string;
-  fields: any;
+  fields: WorkflowState | WorkflowEvent | Workflow;
 }
 
 export default function WorkflowVisualizer() {
@@ -82,12 +82,21 @@ export default function WorkflowVisualizer() {
 
   // Load Mermaid library
   useEffect(() => {
-    if (typeof window !== 'undefined' && !(window as any).mermaid) {
+    interface WindowWithMermaid extends Window {
+      mermaid?: {
+        initialize: (config: unknown) => void;
+        render: (id: string, code: string) => Promise<{ svg: string }>;
+      };
+    }
+
+    const win = window as WindowWithMermaid;
+
+    if (typeof window !== 'undefined' && !win.mermaid) {
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
       script.async = true;
       script.onload = () => {
-        (window as any).mermaid.initialize({ 
+        win.mermaid?.initialize({
           startOnLoad: false,
           theme: 'default',
           flowchart: {
@@ -105,7 +114,7 @@ export default function WorkflowVisualizer() {
           document.body.removeChild(script);
         }
       };
-    } else if ((window as any).mermaid) {
+    } else if (win.mermaid) {
       setMermaidLoaded(true);
     }
   }, []);
@@ -177,16 +186,16 @@ export default function WorkflowVisualizer() {
     const relevantStateUuids = new Set<string>();
     const relevantEvents: WorkflowEvent[] = [];
 
-    workflow.events?.forEach(([eventSlug, eventUuid]) => {
+    workflow.events?.forEach(([, eventUuid]) => {
       const event = workflowData.events[eventUuid];
       if (!event) return;
 
-      const isAccessible = selectedGroup === 'all' || 
+      const isAccessible = selectedGroup === 'all' ||
         event.groups?.some(g => g[0] === selectedGroup);
 
       if (isAccessible) {
         relevantEvents.push(event);
-        event.source?.forEach(([slug, uuid]) => relevantStateUuids.add(uuid));
+        event.source?.forEach(([, uuid]) => relevantStateUuids.add(uuid));
         if (event.destination) {
           relevantStateUuids.add(event.destination[1]);
         }
@@ -250,15 +259,15 @@ export default function WorkflowVisualizer() {
     code += '\n';
     
     filteredFlow.events.forEach(event => {
-      event.source?.forEach(([slug, sourceUuid]) => {
+      event.source?.forEach(([, sourceUuid]) => {
         const destUuid = event.destination?.[1];
         if (!destUuid) return;
-        
+
         if (!visibleStateUuids.has(sourceUuid) || !visibleStateUuids.has(destUuid)) return;
-        
+
         const sourceState = filteredFlow.stateMap[sourceUuid];
         const destState = filteredFlow.stateMap[destUuid];
-        
+
         if (sourceState && destState) {
           const sourceId = sourceState.slug.replace(/-/g, '_');
           const destId = destState.slug.replace(/-/g, '_');
@@ -275,17 +284,23 @@ export default function WorkflowVisualizer() {
     return code;
   }, [filteredFlow, selectedGroup, excludedStates, hideViewOnlyStates]);
 
+  interface TransitionMatrixItem {
+    source: WorkflowState;
+    dest: WorkflowState;
+    events: WorkflowEvent[];
+  }
+
   const transitionMatrix = useMemo(() => {
-    const matrix: Record<string, any> = {};
+    const matrix: Record<string, TransitionMatrixItem> = {};
     
     filteredFlow.events.forEach(event => {
-      event.source?.forEach(([slug, sourceUuid]) => {
+      event.source?.forEach(([, sourceUuid]) => {
         const destUuid = event.destination?.[1];
         if (!destUuid) return;
-        
+
         const sourceState = filteredFlow.stateMap[sourceUuid];
         const destState = filteredFlow.stateMap[destUuid];
-        
+
         if (sourceState && destState) {
           const key = `${sourceState.uuid}-${destState.uuid}`;
           if (!matrix[key]) {
@@ -397,14 +412,21 @@ export default function WorkflowVisualizer() {
   };
 
   useEffect(() => {
+    interface WindowWithMermaid extends Window {
+      mermaid?: {
+        render: (id: string, code: string) => Promise<{ svg: string }>;
+      };
+    }
+
     if (mermaidLoaded && mermaidRef.current && mermaidCode && viewMode === 'mermaid') {
       mermaidRef.current.innerHTML = '';
-      
+
       const renderDiagram = async () => {
         try {
-          const { svg } = await (window as any).mermaid.render('mermaid-diagram', mermaidCode);
-          if (mermaidRef.current) {
-            mermaidRef.current.innerHTML = svg;
+          const win = window as WindowWithMermaid;
+          const result = await win.mermaid?.render('mermaid-diagram', mermaidCode);
+          if (mermaidRef.current && result) {
+            mermaidRef.current.innerHTML = result.svg;
           }
         } catch (error) {
           console.error('Mermaid rendering error:', error);
@@ -413,7 +435,7 @@ export default function WorkflowVisualizer() {
           }
         }
       };
-      
+
       renderDiagram();
     }
   }, [mermaidLoaded, mermaidCode, viewMode]);
@@ -638,13 +660,13 @@ export default function WorkflowVisualizer() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {transitionMatrix.map((transition: any, idx: number) => {
+                  {transitionMatrix.map((transition: TransitionMatrixItem, idx: number) => {
                     const sourcePerm = getStatePermission(transition.source);
                     const destPerm = getStatePermission(transition.dest);
                     const isExpanded = expandedTableRows.has(idx);
                     
                     return (
-                      <React.Fragment key={idx}>
+                      <Fragment key={idx}>
                         <tr className="hover:bg-gray-50">
                           <td className="px-3 py-4">
                             <button
@@ -729,11 +751,11 @@ export default function WorkflowVisualizer() {
                                     </code>
                                   </div>
                                   <div className="grid grid-cols-2 gap-3">
-                                    {transition.source.editable_groups?.length > 0 && (
+                                    {transition.source.editable_groups && transition.source.editable_groups.length > 0 && (
                                       <div>
                                         <p className="text-xs text-gray-600 mb-1">Can Edit:</p>
                                         <div className="flex flex-wrap gap-1">
-                                          {transition.source.editable_groups.map((g: string[], i: number) => (
+                                          {transition.source.editable_groups?.map((g: string[], i: number) => (
                                             <span key={i} className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
                                               {g[0]}
                                             </span>
@@ -741,11 +763,11 @@ export default function WorkflowVisualizer() {
                                         </div>
                                       </div>
                                     )}
-                                    {transition.source.viewable_groups?.length > 0 && (
+                                    {transition.source.viewable_groups && transition.source.viewable_groups.length > 0 && (
                                       <div>
                                         <p className="text-xs text-gray-600 mb-1">Can View:</p>
                                         <div className="flex flex-wrap gap-1">
-                                          {transition.source.viewable_groups.map((g: string[], i: number) => (
+                                          {transition.source.viewable_groups?.map((g: string[], i: number) => (
                                             <span key={i} className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
                                               {g[0]}
                                             </span>
@@ -811,11 +833,11 @@ export default function WorkflowVisualizer() {
                                     </code>
                                   </div>
                                   <div className="grid grid-cols-2 gap-3">
-                                    {transition.dest.editable_groups?.length > 0 && (
+                                    {transition.dest.editable_groups && transition.dest.editable_groups.length > 0 && (
                                       <div>
                                         <p className="text-xs text-gray-600 mb-1">Can Edit:</p>
                                         <div className="flex flex-wrap gap-1">
-                                          {transition.dest.editable_groups.map((g: string[], i: number) => (
+                                          {transition.dest.editable_groups?.map((g: string[], i: number) => (
                                             <span key={i} className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
                                               {g[0]}
                                             </span>
@@ -823,11 +845,11 @@ export default function WorkflowVisualizer() {
                                         </div>
                                       </div>
                                     )}
-                                    {transition.dest.viewable_groups?.length > 0 && (
+                                    {transition.dest.viewable_groups && transition.dest.viewable_groups.length > 0 && (
                                       <div>
                                         <p className="text-xs text-gray-600 mb-1">Can View:</p>
                                         <div className="flex flex-wrap gap-1">
-                                          {transition.dest.viewable_groups.map((g: string[], i: number) => (
+                                          {transition.dest.viewable_groups?.map((g: string[], i: number) => (
                                             <span key={i} className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
                                               {g[0]}
                                             </span>
@@ -841,7 +863,7 @@ export default function WorkflowVisualizer() {
                             </td>
                           </tr>
                         )}
-                      </React.Fragment>
+                      </Fragment>
                     );
                   })}
                 </tbody>
