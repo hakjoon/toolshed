@@ -15,7 +15,9 @@ Mostly a sandbox to play around with vibe coding small tools.
 
 ## 📦 Included Tools
 
-- **JSON to .env Converter**: Convert JSON configuration to environment variable format
+- **JSON to .env Converter**: Convert JSON configuration to environment variable format with copy-to-clipboard functionality
+- **Article Subtype Counter**: Analyze and visualize article subtypes by date range with GROQ query integration, featuring multiple visualization modes (summary cards, tables, bar charts)
+- **Workflow State Machine Visualizer**: Complex workflow visualization tool with three view modes (Table, Cards, Mermaid diagrams), filters by user groups and permissions, and interactive state transitions
 
 ## 🚀 Quick Start
 
@@ -68,32 +70,41 @@ toolshed/
 2. Use this template:
 
 ```typescript
-import React, { useState } from "react";
+import { useState } from "react";
 
-// Export tool metadata (required)
-export const toolConfig = {
-  name: "Your Tool Name",
-  description: "Brief description of what your tool does",
-};
-
-// Export your component as default (required)
-export default function YourToolName() {
+function PasswordGenerator() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Your Tool Name
+          Password Generator
         </h1>
-        <p className="text-gray-600 mb-6">Tool description</p>
+        <p className="text-gray-600 mb-6">
+          Generate secure passwords with customizable options
+        </p>
 
         {/* Your tool UI goes here */}
       </div>
     </div>
   );
 }
+
+// Export a single tool object with metadata and component (required)
+export const tool = {
+  name: "Password Generator",
+  description: "Generate secure passwords with customizable options",
+  component: PasswordGenerator,
+};
 ```
 
 3. That's it! The tool will automatically appear in the sidebar.
+
+### Key Points
+
+- **Function declaration**: Define your component as a regular function (not `export default`)
+- **Single export**: Export a `tool` object containing `name`, `description`, and `component`
+- **Auto-discovery**: The tool automatically appears in the sidebar - no registration needed
+- **Hot Module Replacement**: Changes appear instantly during development
 
 ### Method 2: Use AI to Generate Tools
 
@@ -110,20 +121,14 @@ Please create a tool for: [DESCRIBE YOUR TOOL IDEA]
 
 Requirements:
 1. Create a React component in TypeScript
-2. Export a toolConfig object with name and description
-3. Export the component as default
-4. Use Tailwind CSS for styling (utility classes only - no custom CSS)
-5. Make it fully functional and self-contained
-6. Follow this structure:
+2. Export a single 'tool' object containing name, description, and component
+3. Use Tailwind CSS for styling (utility classes only - no custom CSS)
+4. Make it fully functional and self-contained
+5. Follow this structure:
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-export const toolConfig = {
-  name: 'Tool Name',
-  description: 'Brief description'
-};
-
-export default function ToolName() {
+function ToolName() {
   // Component logic here
 
   return (
@@ -137,6 +142,12 @@ export default function ToolName() {
     </div>
   );
 }
+
+export const tool = {
+  name: 'Tool Name',
+  description: 'Brief description',
+  component: ToolName,
+};
 
 Available Tailwind classes and React hooks can be used.
 Icons from lucide-react are available: import { IconName } from 'lucide-react';
@@ -158,8 +169,8 @@ Please create a tool for: A Pomodoro timer with customizable work/break interval
 
 ### Tool Requirements
 
-- **Must** export `toolConfig` with at least a `name` property
-- **Must** have a default export (your React component)
+- **Must** export a `tool` object with `name`, `description`, and `component` properties
+- **Must** define the component as a function (not default export)
 - **Should** be self-contained (all logic in one file)
 - **Should** use Tailwind CSS utility classes for styling
 - **Can** use React hooks (useState, useEffect, etc.)
@@ -186,6 +197,55 @@ npm run preview
 ```
 
 The production build will be in the `dist/` folder, which can be deployed to any static hosting service.
+
+## 🛠️ Technical Details
+
+### Tool Discovery System
+
+The auto-discovery system uses Vite's `import.meta.glob` to automatically find and register all tools:
+
+```typescript
+// src/tools/index.ts
+const toolModules = import.meta.glob<{ tool: ToolExport }>("./*.tsx", {
+  eager: true,
+});
+
+export const tools = Object.keys(toolModules)
+  .map((path) => {
+    const module = toolModules[path];
+    return {
+      id: path.replace("./", "").replace(".tsx", ""),
+      name: module.tool.name,
+      description: module.tool.description,
+      component: module.tool.component,
+    };
+  })
+  .sort((a, b) => a.name.localeCompare(b.name));
+```
+
+**Key Benefits:**
+- ✅ **Zero configuration** - Just drop a file in `src/tools/`
+- ✅ **Type-safe** - Full TypeScript support with proper interfaces
+- ✅ **HMR support** - Instant hot reload during development
+- ✅ **Clean builds** - No warnings, optimized production bundles
+
+### Export Structure
+
+Each tool must export a single `tool` object:
+
+```typescript
+export interface ToolExport {
+  name: string;              // Display name in sidebar
+  description?: string;      // Optional description
+  component: React.ComponentType; // Your React component
+}
+```
+
+This structure:
+- Keeps metadata and component together
+- Enables immediate sidebar display
+- Supports proper HMR without page reloads
+- Provides type safety across the application
 
 ## 📄 License
 

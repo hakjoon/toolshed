@@ -16,11 +16,6 @@ if (!document.head.contains(style)) {
   document.head.appendChild(style);
 }
 
-export const toolConfig = {
-  name: 'Workflow State Machine Visualizer',
-  description: 'Visualize and explore workflow state machines with permissions, transitions, and user groups'
-};
-
 interface WorkflowState {
   slug: string;
   name: string;
@@ -58,7 +53,7 @@ interface WorkflowDataItem {
   fields: WorkflowState | WorkflowEvent | Workflow;
 }
 
-export default function WorkflowVisualizer() {
+function WorkflowVisualizer() {
   const [selectedWorkflow, setSelectedWorkflow] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('all');
   const [showLegend, setShowLegend] = useState(false);
@@ -1256,3 +1251,9 @@ export default function WorkflowVisualizer() {
     </div>
   );
 }
+
+export const tool = {
+  name: 'Workflow State Machine Visualizer',
+  description: 'Visualize and explore workflow state machines with permissions, transitions, and user groups',
+  component: WorkflowVisualizer,
+};

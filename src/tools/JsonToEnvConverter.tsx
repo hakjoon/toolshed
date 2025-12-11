@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 
-export const toolConfig = {
-  name: "JSON to .env",
-  description: "Convert JSON to environment variables format",
-};
-
-export default function JsonToEnvConverter() {
+function JsonToEnvConverter() {
   const [jsonInput, setJsonInput] = useState("");
   const [envOutput, setEnvOutput] = useState("");
   const [error, setError] = useState("");
@@ -155,3 +150,9 @@ DEBUG=true`}
     </div>
   );
 }
+
+export const tool = {
+  name: "JSON to .env",
+  description: "Convert JSON to environment variables format",
+  component: JsonToEnvConverter,
+};

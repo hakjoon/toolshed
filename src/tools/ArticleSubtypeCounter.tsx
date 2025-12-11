@@ -8,12 +8,6 @@ import {
   Check,
 } from "lucide-react";
 
-export const toolConfig = {
-  name: "Article Subtype Counter",
-  description:
-    "Analyze and visualize article subtypes by date range with GROQ query integration",
-};
-
 interface CountData {
   countMap: Record<string, number>;
   chartData: Array<{
@@ -24,7 +18,7 @@ interface CountData {
   total: number;
 }
 
-export default function ArticleSubtypeCounter() {
+function ArticleSubtypeCounter() {
   const [groqResults, setGroqResults] = useState("");
   const [counts, setCounts] = useState<CountData | null>(null);
   const [error, setError] = useState("");
@@ -444,3 +438,9 @@ export default function ArticleSubtypeCounter() {
     </div>
   );
 }
+
+export const tool = {
+  name: "Article Subtype Counter",
+  description: "Analyze and visualize article subtypes by date range with GROQ query integration",
+  component: ArticleSubtypeCounter,
+};
